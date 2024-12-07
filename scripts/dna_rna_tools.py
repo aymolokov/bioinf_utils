@@ -54,6 +54,8 @@ def transcribe(seq):
     str
         The RNA sequence corresponding to the given DNA sequence.
     """
+    if not is_dna(seq):
+        raise ValueError("Attempt to transcribe RNA!")
     return seq.replace("t", "u").replace("T", "U")
 
 
@@ -73,6 +75,8 @@ def reverse_transcribe(seq):
         The DNA sequence resulting from the conversion of uracil to thymine,
         preserving the case.
     """
+    if not is_rna(seq):
+        raise ValueError("Attempt to transcribe DNA!")
     return seq.replace("u", "t").replace("U", "T")
 
 
@@ -90,7 +94,9 @@ def reverse(seq):
     str
         The reversed sequence.
     """
-    return seq[::-1]
+    if is_dna(seq) or is_rna(seq):
+        result = seq[::-1]
+    return result
 
 
 def complement(seq):
@@ -107,24 +113,9 @@ def complement(seq):
     str
         The complement of the given sequence.
     """
-    comp_seq = ""
-    a_comp = "T" if is_dna(seq) else "U"
-    for base in seq:
-        comp_base = base.upper()
-        if comp_base == "C":
-            comp_base = "G"
-        elif comp_base == "G":
-            comp_base = "C"
-        elif comp_base == "T":
-            comp_base = "A"
-        elif comp_base == "U":
-            comp_base = "A"
-        elif comp_base == "A":
-            comp_base = a_comp
-        if (base.islower()):
-            comp_base = comp_base.lower()
-        comp_seq += comp_base
-    return comp_seq
+    if is_dna(seq) or is_rna(seq):
+            complement_str = str.maketrans('AUGCaugc', 'UACGuacg')
+    return seq.translate(complement_str)
 
 
 def reverse_complement(seq):
