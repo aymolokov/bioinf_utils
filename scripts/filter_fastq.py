@@ -1,51 +1,26 @@
-def avg_quality(seq_quality):
+import typing
+from typing import Union
+from scripts.dna_rna_tools import is_dna, is_rna
+
+
+def avg_quality(seq_quality: str) -> float:
     """
     Calculate the average quality score of the given sequence quality.
-
-    Parameters
-    ----------
-    seq_quality : str
-        The sequence quality to calculate the average score for.
-
-    Returns
-    -------
-    float
-        The average quality score of the sequence quality.
     """
     return sum(ord(base) - 33 for base in seq_quality) / len(seq_quality)
 
 
-def gc_percent(seq):
+def gc_percent(seq: str) -> float:
     """
     Calculate the GC content of the given sequence.
-
-    Parameters
-    ----------
-    seq : str
-        The sequence to calculate the GC content for.
-
-    Returns
-    -------
-    float
-        The GC content of the sequence as a percentage.
     """
     return (seq.count("G") + seq.count("C")) / len(seq) * 100
 
 
-def convert_bounds(bounds):
+def convert_bounds(bounds: Union[int, float, list]) -> list:
     """
     Convert bounds to a valid range.
     If only one bound is passed, convert it to [0, bounds].
-
-    Parameters
-    ----------
-    bounds : int, float, list
-        The bounds to convert.
-
-    Returns
-    -------
-    list
-        The converted bounds.
     """
     if isinstance(bounds, int) or isinstance(bounds, float):
         return [0, bounds]
@@ -53,7 +28,9 @@ def convert_bounds(bounds):
         return bounds
 
 
-def filter_fastq_seq(seq_data, gc_bounds, length_bounds, quality_threshold):
+def filter_fastq_seq(seq_data: str, gc_bounds: Union[int, float, list],
+                     length_bounds: Union[list[int, int], int],
+                     quality_threshold: float) -> bool:
     """
     Returns True if the given seq_data satisfies the following conditions:
 
@@ -70,3 +47,60 @@ def filter_fastq_seq(seq_data, gc_bounds, length_bounds, quality_threshold):
     if avg_quality(seq_data[1]) < quality_threshold:
         return False
     return True
+
+
+def read_fastq_seq(fastq_file: typing.TextIO) -> typing.List[str]:
+    """
+    Reads a FASTQ sequence from the given file and returns a list of 4 strings:
+    name, description, sequence and quality.
+    If the file is closed or empty, returns an empty list.
+    If the FASTQ entry is invalid in any way, raises a ValueError with
+    a description of the problem.
+    """
+    seq_data = []
+    if fastq_file.closed:
+        raise SystemError("The FASTQ file is not open.")
+    title = fastq_file.readline().rstrip('\n')
+    if not title:
+        return seq_data
+    if len(title) < 2 or title[0] != "@":
+        raise ValueError("Invalid Field 1 in the FASTQ entry.")
+    separator_index = title.find(" ")
+    name = title[1:separator_index]
+    desc = "" if separator_index == -1 else title[separator_index + 1:]
+    seq_data.append(name)
+    seq_data.append(desc)
+    seq = fastq_file.readline().rstrip('\n')
+    seq_len = len(seq)
+    if seq_len < 1 or not (is_rna(seq) or is_dna(seq)):
+        raise ValueError("Invalid Field 2 in the FASTQ entry.")
+    seq_data.append(seq)
+    comp = fastq_file.readline().rstrip('\n')
+    if len(comp) < 1 or comp[0] != "+":
+        raise ValueError("Invalid Field 3 in the FASTQ entry.")
+    seq_data.append(comp)
+    qual = fastq_file.readline().rstrip('\n')
+    if len(qual) != seq_len:
+        raise ValueError("Invalid Field 4 length in the FASTQ entry.")
+    for base in qual:
+        if not (33 <= ord(base) <= 126):
+            raise ValueError("Invalid Field 4 in the FASTQ entry.")
+    seq_data.append(qual)
+    return seq_data
+
+
+def write_fastq_seq(fastq_file: typing.TextIO, seq_data: typing.List[str]):
+    """
+    Writes a FASTQ sequence to the given file from the given seq_data.
+
+    The seq_data must be a list of 5 strings: name, description, sequence,
+    comment and quality.
+
+    If the file is closed, raises a SystemError with the problem description.
+    """
+    if fastq_file.closed:
+        raise SystemError("The FASTQ file is not open.")
+    fastq_file.write(f"@{seq_data[0]}")
+    if (seq_data[1] != ""):
+        fastq_file.write(f" {seq_data[1]}")
+    fastq_file.write(f"\n{seq_data[2]}\n{seq_data[3]}\n{seq_data[4]}\n")

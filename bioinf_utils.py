@@ -2,9 +2,11 @@ from scripts.dna_rna_tools import is_dna, is_rna
 from scripts.dna_rna_tools import transcribe, complement, reverse
 from scripts.dna_rna_tools import reverse_complement, reverse_transcribe
 from scripts.filter_fastq import filter_fastq_seq, convert_bounds
+from scripts.filter_fastq import read_fastq_seq, write_fastq_seq
+from typing import Union
 
 
-def run_dna_rna_tools(*args):
+def run_dna_rna_tools(*args: list[str]) -> list[str]:
     """
     Processes a list of DNA/RNA sequences based on the specified procedure.
 
@@ -54,34 +56,42 @@ def run_dna_rna_tools(*args):
         return res
 
 
-def filter_fastq(seqs, gc_bounds=[0, 100],
-                 length_bounds=[0, 2**32], quality_threshold=0):
+def filter_fastq(input_fastq: str, output_fastq: str,
+                 gc_bounds: Union[list[float, float], float] = [0, 100],
+                 length_bounds: Union[list[int, int], int] = [0, 2**32],
+                 quality_threshold: float = 0) -> None:
     """
-    Filters a dictionary of FASTQ sequences based on GC content,
+    Filters a fastq file based on GC content,
     sequence length, and average quality.
 
     Parameters:
-    seqs (dict): A dictionary where keys are sequence identifiers and values
-                 are tuples containing the sequence and its quality string.
-    gc_bounds (list or float, optional): A two-elements list representing the
-                 inclusive lower and upper bounds for GC content percentage.
-                 If a single float is provided, it is considered as the upper
-                 bound with a default lower bound of 0. Default is [0, 100].
-    length_bounds (list or int, optional): A two-elements list representing
+    input_fastq: The input fastq file.
+    output_fastq: The output fastq file.
+    gc_bounds: A two-elements list representing the
+                inclusive lower and upper bounds for GC content percentage.
+                If a single float is provided, it is considered as the upper
+                bound with a default lower bound of 0. Default is [0, 100].
+    length_bounds: A two-elements list representing
                  the inclusive lower and upper bounds for sequence length.
                  If a single integer is provided, it is considered as the upper
                  bound with a default lower bound of 0. Default is [0, 2**32].
-    quality_threshold (int, optional): The minimum average quality threshold
+    quality_threshold: The minimum average quality threshold
                  for sequences to be retained. Default is 0 (phred33 scale).
-
-    Returns:
-    dict: A dictionary containing only the sequences that meet all filtering
-          criteria, with the same structure as the input dictionary.
     """
     gc_bounds = convert_bounds(gc_bounds)
     length_bounds = convert_bounds(length_bounds)
-    filtered = {}
-    for name, seq in seqs.items():
-        if filter_fastq_seq(seq, gc_bounds, length_bounds, quality_threshold):
-            filtered[name] = seq
-    return filtered
+    input_fastq_file = open(input_fastq, "r")
+    output_fastq_file = open(output_fastq, "w")
+    try:
+        entry = 1
+        seq_data = read_fastq_seq(input_fastq_file)
+        while seq_data:
+            if filter_fastq_seq(seq_data, gc_bounds, length_bounds,
+                                quality_threshold):
+                write_fastq_seq(output_fastq_file, seq_data)
+            entry += 1
+            seq_data = read_fastq_seq(input_fastq_file)
+    except (ValueError, SystemError) as e:
+        print(f"Error {e} in entry {entry}.")
+    input_fastq_file.close()
+    output_fastq_file.close()
