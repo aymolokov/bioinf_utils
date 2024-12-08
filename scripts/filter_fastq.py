@@ -49,13 +49,17 @@ def filter_fastq_seq(seq_data: str, gc_bounds: Union[int, float, list],
     return True
 
 
-def read_fastq_seq(fastq_file: typing.TextIO) -> typing.List[str]:
+def read_fastq_seq(fastq_file: typing.TextIO,
+                   multiline_seq: bool = False) -> typing.List[str]:
     """
     Reads a FASTQ sequence from the given file and returns a list of 4 strings:
     name, description, sequence and quality.
     If the file is closed or empty, returns an empty list.
     If the FASTQ entry is invalid in any way, raises a ValueError with
     a description of the problem.
+
+    If multiline_seq is True, reads the sequence from multiple lines until the
+    line starting with "+" is encountered.
     """
     seq_data = []
     if fastq_file.closed:
@@ -70,13 +74,20 @@ def read_fastq_seq(fastq_file: typing.TextIO) -> typing.List[str]:
     desc = "" if separator_index == -1 else title[separator_index + 1:]
     seq_data.append(name)
     seq_data.append(desc)
+
     seq = fastq_file.readline().rstrip('\n')
     seq_len = len(seq)
     if seq_len < 1 or not (is_rna(seq) or is_dna(seq)):
         raise ValueError("Invalid Field 2 in the FASTQ entry.")
+    line = fastq_file.readline().rstrip('\n')
+    if multiline_seq:
+        while line and line[0] != "+":
+            seq += line
+            seq_len += len(line)
+            line = fastq_file.readline().rstrip('\n')
     seq_data.append(seq)
-    comp = fastq_file.readline().rstrip('\n')
-    if len(comp) < 1 or comp[0] != "+":
+    comp = line
+    if not comp or comp[0] != "+":
         raise ValueError("Invalid Field 3 in the FASTQ entry.")
     seq_data.append(comp)
     qual = fastq_file.readline().rstrip('\n')
