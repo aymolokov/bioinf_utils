@@ -4,6 +4,7 @@ from scripts.dna_rna_tools import reverse_complement, reverse_transcribe
 from scripts.filter_fastq import filter_fastq_seq, convert_bounds
 from scripts.filter_fastq import read_fastq_seq, write_fastq_seq
 from typing import Union
+from pathlib import Path
 
 
 def run_dna_rna_tools(*args: list[str]) -> list[str]:
@@ -81,7 +82,9 @@ def filter_fastq(input_fastq: str, output_fastq: str,
     gc_bounds = convert_bounds(gc_bounds)
     length_bounds = convert_bounds(length_bounds)
     input_fastq_file = open(input_fastq, "r")
-    output_fastq_file = open(output_fastq, "w")
+    output_fastq_path = Path("./filtered/" + output_fastq)
+    output_fastq_path.parent.mkdir(exist_ok=True)
+    output_fastq_file = open(output_fastq_path, "w")
     try:
         entry = 1
         seq_data = read_fastq_seq(input_fastq_file)
