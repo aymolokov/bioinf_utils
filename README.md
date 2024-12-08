@@ -1,7 +1,7 @@
 # bioinf_utils
 
 
-**BioinfUtils** is a toolkit for basic operations with DNA and RNA sequences. BioinfUtils will help you with such operations on DNA and RNA as transcription, reverse transcription, finding the reversed, complementary and reversed complementary sequence. It can also filter fastq by gc-content, sequence length and read quality.
+**BioinfUtils** is a toolkit for basic operations with DNA and RNA sequences. BioinfUtils will help you with such operations on DNA and RNA as transcription, reverse transcription, finding the reversed, complementary and reversed complementary sequence. It can also filter fastq file by gc-content, sequence length, read quality and correct multiline sequence mistake (It will be in oneline). If you have a gbk file BioinfUtils can get a list of genes with the greatest match to the database and save all the results in one meta.
 
 Authors:
 * **Software:** *Aleksey Molokov* <br/>
@@ -40,25 +40,42 @@ import bioinf_utils
 ```
 * #### GC_content
 ```python
->>> bioinf_utils.filter_fastq_from_dict(
-{
-    '@SRX079804': ('TAGCTAGGACGAGGATCGT',
-                   'FFFGGGFFFDGGEFDDDCC'),
-    '@SRX079805': ('CAGTGCAGTGCTAGCTAGCTGACGTACGTAGCTGACTGA',
-                   'GGGGGGFFEE@CEEBFDFDFFGGGEFFDDBBFFFBGFGF'),
-    '@SRX079806': ('TTAGCGTAGCTAGCTAGTGGACGT',
-                   'DFFDFFGGGGFFFCCCDDFFFGG!'),
-    '@SRX079807': ('GATCGATCGTAGCTAGCTGACGTACTGACGATCGA',
-                   'CEEEFGGGGFFDFDBBFFDDGGGFEDDDFFFF@FB'),
-    '@SRX079808': ('AGGCGTACGATCGTACGTACGATCGT',
-                   'GGGGFFFGGGGEFFDDCCBFGGEED@')
-}
+>>> bioinf_utils.filter_fastq('example_file','example_file_filtered',
       gc_bounds=(0,60),
       length_bounds=(0, 25),
       quality_threshold=33
   )
+example_file =
+    @SRX079804
+    TAGCTAGGACGAGGATCGT
+    +
+    FFFGGGFFFDGGEFDDDCC
+    @SRX079805
+    CAGTGCAGTGCTAGCTAGCTGACGTACGTAGCTGACTGA
+    +
+    GGGGGGFFEE@CEEBFDFDFFGGGEFFDDBBFFFBGFGF
+    @SRX079806
+    TTAGCGTAGCTAGCTAGTGGACGT
+    +
+    DFFDFFGGGGFFFCCCDDFFFGG!
+    @SRX079807
+    GATCGATCGTAGCTAGCTGACGTACTGACGATCGA
+    +
+    CEEEFGGGGFFDFDBBFFDDGGGFEDDDFFFF@FB
+    @SRX079808
+    AGGCGTACGATCGTACGTACGATCGT
+    +
+    GGGGFFFGGGGEFFDDCCBFGGEED@'
 
-{'@SRX079804': ('TAGCTAGGACGAGGATCGT', 'FFFGGGFFFDGvEFDDDCC'), '@SRX079806': ('TTAGCGTAGCTAGCTAGTGGACGT', 'DFFDFFGGGGFFFCCCDDFFFGG!')}
+example_file_filtered =
+    '@SRX079804
+    TAGCTAGGACGAGGATCGT
+    +
+    FFFGGGFFFDGvEFDDDCC
+    @SRX079806
+    TTAGCGTAGCTAGCTAGTGGACGT
+    +
+    DFFDFFGGGGFFFCCCDDFFFGG!'
 ```
 
 ## FAQ
